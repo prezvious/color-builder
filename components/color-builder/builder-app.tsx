@@ -186,9 +186,6 @@ export function BuilderApp({ featuredPalettes }: BuilderAppProps) {
               </span>
             </div>
             <nav className="flex flex-wrap gap-3 text-sm font-semibold text-[var(--text-secondary)]">
-              <Link href="/" className="studio-button studio-button-secondary">
-                Builder
-              </Link>
               <Link href="/gallery" className="studio-button studio-button-secondary">
                 Gallery
               </Link>
@@ -201,7 +198,7 @@ export function BuilderApp({ featuredPalettes }: BuilderAppProps) {
                 Transform raw palette lists into a strict Markdown system
               </p>
               <h1 className="display-face max-w-5xl text-5xl leading-[0.92] text-[var(--text-primary)] sm:text-6xl lg:text-7xl">
-                Build, validate, publish, and export every palette with one canonical template.
+                Color Builder
               </h1>
               <p className="max-w-3xl text-base leading-8 text-[var(--text-secondary)] sm:text-lg">
                 Paste your raw color text, generate the approved Markdown block, then paste that
