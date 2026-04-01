@@ -28,15 +28,25 @@ export function normalizeColor(value: string): { source: string; hex: string } |
 
 export function getReadableTextColor(hex: string): string {
   const parsed = parse(hex);
-  const rgb = parsed ? toRgb(parsed) : null;
+
+  if (!parsed) {
+    return "#1F1812";
+  }
+
+  const rgb = toRgb(parsed);
 
   if (!rgb) {
     return "#1F1812";
   }
 
-  const luminance = [rgb.r, rgb.g, rgb.b]
+  const alpha = typeof parsed.alpha === "number" ? parsed.alpha : 1;
+  const r = alpha * rgb.r + (1 - alpha);
+  const g = alpha * rgb.g + (1 - alpha);
+  const b = alpha * rgb.b + (1 - alpha);
+
+  const luminance = [r, g, b]
     .map((channel) =>
-      channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+      channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
     )
     .reduce((total, channel, index) => {
       const weights = [0.2126, 0.7152, 0.0722];

@@ -12,12 +12,12 @@ export function extractClientIp(request: Request): string | null {
   return ip || null;
 }
 
-export function hashIpAddress(ip: string | null): string | null {
-  if (!ip) {
+export function hashIpAddress(ip: string): string | null {
+  const salt = process.env.RATE_LIMIT_SALT;
+
+  if (!salt) {
     return null;
   }
-
-  const salt = process.env.RATE_LIMIT_SALT || "color-builder-rate-limit";
 
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
 }

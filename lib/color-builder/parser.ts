@@ -22,11 +22,25 @@ function shouldIgnoreNameCandidate(value: string): boolean {
   return /^color\s+\d+\b/i.test(value) || /^color\s+palette\b/i.test(value) || /^warna\b/i.test(value);
 }
 
-function toPaletteColor(index: number, source: string): PaletteColor {
+function toPaletteColorStrict(index: number, source: string): PaletteColor {
   const normalized = normalizeColor(source);
 
   if (!normalized) {
     throw new ComplianceError();
+  }
+
+  return {
+    index,
+    source: normalized.source,
+    hex: normalized.hex,
+  };
+}
+
+function toPaletteColorLoose(index: number, source: string): PaletteColor | null {
+  const normalized = normalizeColor(source);
+
+  if (!normalized) {
+    return null;
   }
 
   return {
@@ -76,11 +90,12 @@ export function parseRawPaletteText(rawText: string): ParseRawResult {
     const tokens = extractColorTokens(line);
 
     if (tokens.length > 0) {
-      currentColors.push(
-        ...tokens.map((token, tokenIndex) =>
-          toPaletteColor(currentColors.length + tokenIndex + 1, token),
-        ),
-      );
+      for (const token of tokens) {
+        const color = toPaletteColorLoose(currentColors.length + 1, token);
+        if (color) {
+          currentColors.push(color);
+        }
+      }
       continue;
     }
 
@@ -187,7 +202,7 @@ export function parseMarkdownSubmission(markdownBlock: string): ParseMarkdownRes
         throw new ComplianceError();
       }
 
-      colors.push(toPaletteColor(expectedColorNumber, colorMatch[2].trim()));
+      colors.push(toPaletteColorStrict(expectedColorNumber, colorMatch[2].trim()));
       expectedColorNumber += 1;
       pointer += 1;
     }

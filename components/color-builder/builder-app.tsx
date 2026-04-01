@@ -82,29 +82,36 @@ export function BuilderApp({ featuredPalettes }: BuilderAppProps) {
         setPublishError(null);
         setPublishResult(null);
 
-        const response = await fetch("/api/parse-raw", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ rawText }),
-        });
+        try {
+          const response = await fetch("/api/parse-raw", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ rawText }),
+          });
 
-        const payload = (await response.json()) as ParseRawResponse | { message: string };
+          const payload = (await response.json()) as ParseRawResponse | { message: string };
 
-        if (!response.ok || !("generatedMarkdown" in payload)) {
+          if (!response.ok || !("generatedMarkdown" in payload)) {
+            setDraftPalettes([]);
+            setWarnings([]);
+            setGeneratedMarkdown("");
+            setRawError("message" in payload ? payload.message : "Unable to parse the raw text.");
+            return;
+          }
+
+          setDraftPalettes(payload.palettes);
+          setWarnings(payload.warnings);
+          setGeneratedMarkdown(payload.generatedMarkdown);
+          setFinalMarkdown("");
+          resetFinalState();
+        } catch {
           setDraftPalettes([]);
           setWarnings([]);
           setGeneratedMarkdown("");
-          setRawError("message" in payload ? payload.message : "Unable to parse the raw text.");
-          return;
+          setRawError("Unable to parse the raw text.");
         }
-
-        setDraftPalettes(payload.palettes);
-        setWarnings(payload.warnings);
-        setGeneratedMarkdown(payload.generatedMarkdown);
-        setFinalMarkdown("");
-        resetFinalState();
       })();
     });
   };
@@ -116,24 +123,29 @@ export function BuilderApp({ featuredPalettes }: BuilderAppProps) {
         setPublishError(null);
         setPublishResult(null);
 
-        const response = await fetch("/api/parse-markdown", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ markdownBlock: finalMarkdown }),
-        });
+        try {
+          const response = await fetch("/api/parse-markdown", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ markdownBlock: finalMarkdown }),
+          });
 
-        const payload = (await response.json()) as ParseMarkdownResponse | { message: string };
+          const payload = (await response.json()) as ParseMarkdownResponse | { message: string };
 
-        if (!response.ok || !("normalizedMarkdown" in payload)) {
+          if (!response.ok || !("normalizedMarkdown" in payload)) {
+            setValidatedPalettes([]);
+            setComplianceError(COMPLIANCE_ERROR_MESSAGE);
+            return;
+          }
+
+          setValidatedPalettes(payload.palettes);
+          setValidatedSourceMarkdown(finalMarkdown);
+        } catch {
           setValidatedPalettes([]);
           setComplianceError(COMPLIANCE_ERROR_MESSAGE);
-          return;
         }
-
-        setValidatedPalettes(payload.palettes);
-        setValidatedSourceMarkdown(finalMarkdown);
       })();
     });
   };
@@ -144,28 +156,32 @@ export function BuilderApp({ featuredPalettes }: BuilderAppProps) {
         setPublishError(null);
         setPublishResult(null);
 
-        const response = await fetch("/api/publish", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            markdownBlock: finalMarkdown,
-            sourceMode: mode,
-            rawInput: mode === "raw" ? rawText : null,
-            warnings,
-            honeypot: "",
-          }),
-        });
+        try {
+          const response = await fetch("/api/publish", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              markdownBlock: finalMarkdown,
+              sourceMode: mode,
+              rawInput: mode === "raw" ? rawText : null,
+              warnings,
+              honeypot: "",
+            }),
+          });
 
-        const payload = (await response.json()) as PublishResult | { message: string };
+          const payload = (await response.json()) as PublishResult | { message: string };
 
-        if (!response.ok || !("submissionId" in payload)) {
-          setPublishError("message" in payload ? payload.message : "Unable to publish these palettes.");
-          return;
+          if (!response.ok || !("submissionId" in payload)) {
+            setPublishError("message" in payload ? payload.message : "Unable to publish these palettes.");
+            return;
+          }
+
+          setPublishResult(payload);
+        } catch {
+          setPublishError("Unable to publish these palettes.");
         }
-
-        setPublishResult(payload);
       })();
     });
   };

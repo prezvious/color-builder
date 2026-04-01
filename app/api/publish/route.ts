@@ -61,7 +61,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const ipHash = hashIpAddress(extractClientIp(request));
+    const ip = extractClientIp(request);
+    const ipHash = ip ? hashIpAddress(ip) : null;
     await assertSubmissionRateLimit(client, ipHash);
 
     const result = await saveSubmission({

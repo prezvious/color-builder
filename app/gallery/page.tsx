@@ -3,7 +3,8 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import { PaletteCard } from "@/components/color-builder/palette-card";
-import { isSupabaseConfigured, listPublicPalettes } from "@/lib/color-builder/repository";
+import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { listPublicPalettes } from "@/lib/color-builder/repository";
 
 export const metadata = {
   title: "Gallery",

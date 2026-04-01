@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { nanoid } from "nanoid";
 
 import type {
@@ -10,7 +11,6 @@ import type {
 import {
   getSupabaseAdminClient,
   getSupabaseReadClient,
-  isSupabaseConfigured,
 } from "@/lib/supabase/server";
 import { slugifyFragment } from "@/lib/color-builder/utils";
 
@@ -39,6 +39,8 @@ function mapPaletteRow(row: PaletteRow): StoredPalette {
 function createPaletteSlug(name: string): string {
   return `${slugifyFragment(name)}-${nanoid(6).toLowerCase()}`;
 }
+
+const MAX_SLUG_RETRIES = 5;
 
 export async function listPublicPalettes(limit: number = 24): Promise<StoredPalette[]> {
   const client = getSupabaseReadClient();
@@ -79,6 +81,8 @@ export async function getPaletteBySlug(slug: string): Promise<StoredPalette | nu
 
   return mapPaletteRow(data as PaletteRow);
 }
+
+export const getCachedPaletteBySlug = cache(getPaletteBySlug);
 
 export async function listRelatedPalettes(
   submissionId: string,
@@ -136,30 +140,37 @@ export async function saveSubmission(input: {
     throw submissionError || new Error("Unable to save this submission.");
   }
 
-  const paletteRows = input.palettes.map((palette, index) => ({
-    submission_id: submission.id,
-    slug: createPaletteSlug(palette.name),
-    name: palette.name,
-    sort_order: index + 1,
-    colors: palette.colors,
-  }));
+  let savedPalettes: Array<{ slug: string; name: string }> | null = null;
 
-  const { data: savedPalettes, error: paletteError } = await client
-    .from("palettes")
-    .insert(paletteRows)
-    .select("slug, name");
+  for (let attempt = 0; attempt < MAX_SLUG_RETRIES; attempt++) {
+    const paletteRows = input.palettes.map((palette, index) => ({
+      submission_id: submission.id,
+      slug: createPaletteSlug(palette.name),
+      name: palette.name,
+      sort_order: index + 1,
+      colors: palette.colors,
+    }));
 
-  if (paletteError || !savedPalettes) {
-    throw paletteError || new Error("Unable to save these palettes.");
+    const { data, error } = await client
+      .from("palettes")
+      .insert(paletteRows)
+      .select("slug, name");
+
+    if (!error && data) {
+      savedPalettes = data;
+      break;
+    }
+
+    if (attempt === MAX_SLUG_RETRIES - 1) {
+      throw error || new Error("Unable to save these palettes.");
+    }
   }
 
   return {
     submissionId: submission.id,
-    palettes: savedPalettes.map((palette) => ({
+    palettes: savedPalettes!.map((palette) => ({
       slug: palette.slug,
       name: palette.name,
     })),
   };
 }
-
-export { isSupabaseConfigured };

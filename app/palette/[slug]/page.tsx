@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { CopyButton } from "@/components/color-builder/copy-button";
 import { ExportPaletteButtons } from "@/components/color-builder/export-palette-buttons";
 import { PaletteCard } from "@/components/color-builder/palette-card";
-import { getPaletteBySlug, listRelatedPalettes } from "@/lib/color-builder/repository";
+import { getCachedPaletteBySlug, listRelatedPalettes } from "@/lib/color-builder/repository";
 
 type PalettePageProps = {
   params: Promise<{
@@ -16,7 +16,7 @@ type PalettePageProps = {
 
 export async function generateMetadata({ params }: PalettePageProps) {
   const { slug } = await params;
-  const palette = await getPaletteBySlug(slug);
+  const palette = await getCachedPaletteBySlug(slug);
 
   return {
     title: palette ? palette.name : "Palette not found",
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PalettePageProps) {
 
 export default async function PalettePage({ params }: PalettePageProps) {
   const { slug } = await params;
-  const palette = await getPaletteBySlug(slug);
+  const palette = await getCachedPaletteBySlug(slug);
 
   if (!palette) {
     notFound();
@@ -60,7 +60,7 @@ export default async function PalettePage({ params }: PalettePageProps) {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <CopyButton value={shareUrl} label="Copy relative share path" />
+            <CopyButton value={shareUrl} label="Copy share link" />
             <Link href="/" className="studio-button studio-button-primary">
               Build another
               <ExternalLink className="size-4" />
